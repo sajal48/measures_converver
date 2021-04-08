@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:measures_converver/CubitBlock/bloc.dart';
 
 void main() {
   runApp(MyApp());
@@ -7,9 +9,12 @@ void main() {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return BlocProvider(
+  create: (_) => Calculator(),
+  child: MaterialApp(
       home: HomePage(),
-    );
+    ),
+);
   }
 }
 
@@ -21,21 +26,10 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
 
   final List<String> _measures =['meters','kilometers','gram','kilogram','feet','miles','pounds','ounces'];
-  double _numberForm;
-  String _result;
   String _startmeasure;
   String _totmeasure;
-  final Map<String,int> _measureMap ={
-    'meters': 0,
-    'kilometers': 1,
-    'gram':2,
-    'kilogram':3,
-    'feet':4,
-    'miles':5,
-    'pounds':6,
-    'ounces':7};
-  final dynamic _formulas = { '0':[1,0.001,0,0,3.28084,0.000621371,0,0], '1':[1000,1,0,0,3280.84,0.621371,0,0], '2':[0,0,1,0.0001,0,0,0.00220462,0.035274], '3':[0,0,1000,1,0,0,2.20462,35.274], '4':[0.3048,0.0003048,0,0,1,0.000189394,0,0], '5':[1609.34, 1.60934,0,0,5280,1,0,0], '6':[0,0,453.592,0.453592,0,0,1,16], '7':[0,0,28.3495,0.0283495,3.28084,0,0.0625, 1], };
-  final TextStyle inputstyle = TextStyle(
+
+final TextStyle inputstyle = TextStyle(
     fontSize: 20,
     color:Colors.blue[900]
   );
@@ -66,9 +60,7 @@ class _HomePageState extends State<HomePage> {
               var v= double.tryParse(text);
               if(v!=null)
               {
-                setState(() {
-                  _numberForm=v;
-                });
+                context.read<Calculator>().setvalue(v);
               }
             },
           ),
@@ -86,8 +78,9 @@ class _HomePageState extends State<HomePage> {
                 }).toList(),
               onChanged: (value){
                   setState(() {
-                    _startmeasure=value;
+                    _startmeasure = value;
                   });
+                context.read<Calculator>().setfrom(value);
               },
             ),
             Spacer(),
@@ -104,26 +97,26 @@ class _HomePageState extends State<HomePage> {
               }).toList(),
               onChanged: (value){
                 setState(() {
-                  _totmeasure=value;
+                  _totmeasure = value;
                 });
+                context.read<Calculator>().setto(value);
               },
             ),
             Spacer(flex: 2,),
             ElevatedButton(
               child: Text("Convert",style: inputstyle,),
               onPressed: (){
-                if(_startmeasure.isEmpty||_totmeasure.isEmpty){
-                  return;
-                }
-                else{
-                  converter(_numberForm, _startmeasure, _totmeasure);
-                }
+                context.read<Calculator>().calculate();
               },
             ),
             Spacer(flex: 2,),
-            Text(
-                (_result == null)?"": _result,
-            style: labelStyle,),
+            BlocBuilder<Calculator, String>(
+             builder: (context, state) {
+              return Text(
+                (state== null)?"": state,
+            style: labelStyle,);
+  },
+),
             Spacer(flex: 8,),
           ],
         ),
@@ -131,24 +124,5 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void converter(double value,String from,String to){
-    int nfrom = _measureMap[from];
-    int nto = _measureMap[to];
-    var multiplier =_formulas[nfrom.toString()][nto];
-    print(multiplier);
-
-    var result = value*multiplier;
-    if(result ==0){
-      _result ="This can not be done";
-    }
-    else{
-      _result ='${_numberForm.toString()} $_startmeasure are $result $_totmeasure';
-
-    }
-    setState(() {
-      _result =_result;
-    });
-
-  }
 }
 
